@@ -24,9 +24,9 @@ print('ADC Voltage: ' + str(chan0.voltage) + 'V')
 
 
 while True:
-    #sample the voltages
+    #sample the voltages per second, 1000x a second
     samples = []
-    for _ in range(200):
+    for _ in range(1000):
         samples.append(chan0.voltage)
         time.sleep(1/1000)
     
@@ -49,6 +49,7 @@ while True:
     minVoltage = min(samples)
     maxVoltage = max(samples)
     height = maxVoltage - minVoltage
+    middle = height / 2
 
     
     
@@ -68,6 +69,14 @@ while True:
     #check if sin
     if minVoltage != maxVoltage:
         type = "sine"
+
+    #determine frequency, where counting number times cross midline in second
+    frequency = 0
+    for m in range(1,len(samples)):
+        if(samples[m-1] < middle and samples[m] > middle):
+            frequency += 1
     
+
     #print result
     print("type is ", type)
+    print("frequency is ", frequency)
