@@ -21,48 +21,53 @@ chan0 = AnalogIn(mcp, MCP.P0)
 print('Raw ADC Value: ', chan0.value)
 print('ADC Voltage: ' + str(chan0.voltage) + 'V')
 
-last_read = 0       # this keeps track of the last potentiometer value
-tolerance = 250     # to keep from being jittery we'll only change
-                    # volume when the pot has moved a significant amount
-                    # on a 16-bit ADC
 
-def remap_range(value, left_min, left_max, right_min, right_max):
-    # this remaps a value from original (left) range to new (right) range
-    # Figure out how 'wide' each range is
-    left_span = left_max - left_min
-    right_span = right_max - right_min
-
-    # Convert the left range into a 0-1 range (int)
-    valueScaled = int(value - left_min) / int(left_span)
-
-    # Convert the 0-1 range into a value in the right range.
-    return int(right_min + (valueScaled * right_span))
 
 while True:
-    # we'll assume that the pot didn't move
-    trim_pot_changed = False
+    #sample the voltages
+    samples = []
+    for _ in range(200):
+        samples.append(chan0.voltage)
+        time.sleep(1/1000)
+    
+    #find slope of samples
+    slopes = []
+    for i in range(len(samples) - 1):
+        slopes.append(samples[i+1]-samples[i])
+    
+    #find average slopes
+    sum_slopes = 0
+    for k in slopes:
+        sum_slopes += abs(k)
 
-    # read the analog pin
-    trim_pot = chan0.value
+    avg_slope = sum_slopes / len(slopes)
 
-    # how much has it changed since the last read?
-    pot_adjust = abs(trim_pot - last_read)
+    #define type
+    type = ""
 
-    if pot_adjust > tolerance:
-        trim_pot_changed = True
+    #find min max and difference
+    minVoltage = min(samples)
+    maxVoltage = max(samples)
+    height = maxVoltage - minVoltage
 
-    if trim_pot_changed:
-        # convert 16bit adc0 (0-65535) trim pot read into 0-100 volume level
-        set_volume = remap_range(trim_pot, 0, 65535, 0, 100)
+    
+    
+    #check if square
+    count_flat_region = 0
+    for j in samples:
+        if(abs(j-minVoltage) < 0.25 or abs (j - maxVoltage) < 0.25):
+            count_flat_region += 1
+    
+    if (count_flat_region > 0.75 * len(samples)):
+        type = "square"
 
-        # set OS volume playback volume
-        print('Volume = {volume}%' .format(volume = set_volume))
-        set_vol_cmd = 'sudo amixer cset numid=1 -- {volume}% > /dev/null' \
-        .format(volume = set_volume)
-        os.system(set_vol_cmd)
-
-        # save the potentiometer reading for the next loop
-        last_read = trim_pot
-
-    # hang out and do nothing for a half second
-    time.sleep(0.5)
+    #check if triangle
+    if ((avg_slope > 0.05) and (count_flat_region < 0.75 * len(samples))):
+        type = "triangle"
+    
+    #check if sin
+    if minVoltage != maxVoltage:
+        type = "sine"
+    
+    #print result
+    print("type is ", type)
