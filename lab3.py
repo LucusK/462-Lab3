@@ -67,7 +67,7 @@ while True:
         type = "triangle"
     
     #check if sin
-    if minVoltage != maxVoltage:
+    if (minVoltage != maxVoltage and (count_flat_region < 0.75 * len(samples)) and (avg_slope > 0.05)):
         type = "sine"
 
     #determine frequency, where counting number times cross midline in second
