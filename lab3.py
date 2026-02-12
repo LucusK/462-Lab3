@@ -72,9 +72,11 @@ while True:
         if(abs(j-minVoltage) < 0.08*height or abs (j - maxVoltage) < 0.08*height):
             count_flat_region += 1
     
+
+
     if count_flat_region > 0.8 * len(smoothing):
         type = "square"
-    elif avg_slope > 0.1 * height:
+    elif avg_slope > 0.005 * height:
         type = "triangle"
     else:
         type = "sine"
